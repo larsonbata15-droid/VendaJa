@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loja • VendaJá</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:#f3f4f6; }
+#loadingScr, #errorScr { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff; z-index:100; text-align:center; padding:20px; }
+.spin { width:38px; height:38px; border:4px solid #e5e7eb; border-top-color:#1e3a8a; border-radius:50%; animation:sp 0.8s linear infinite; margin-bottom:16px; }
+@keyframes sp { to { transform:rotate(360deg); } }
+.store-wrap { max-width:1100px; margin:0 auto; background:#fff; min-height:100vh; }
+/* ═══════════════════════════════════════════
+   STORE PREVIEW — fiel às imagens do tema
+═══════════════════════════════════════════ */
+.sp-root { font-family:'DM Sans',sans-serif; background:#fff; color:#111827; overflow:hidden }
+
+/* TICKER */
+.sp-ticker { overflow:hidden; white-space:nowrap; padding:9px 0; font-size:12px; font-weight:700; letter-spacing:.02em }
+.sp-ticker-inner { display:inline-flex; animation:spTicker 22s linear infinite }
+.sp-ticker-inner span { padding:0 32px }
+@keyframes spTicker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* HEADER — logo centrado, hambúrguer esquerda, ícones direita */
+.sp-header {
+  display:grid; grid-template-columns:1fr auto 1fr;
+  align-items:center; padding:0 20px; height:64px;
+  border-bottom:1px solid #f3f4f6; background:#fff;
+  position:sticky; top:0; z-index:20;
+}
+.sp-header-left { display:flex; align-items:center; gap:6px }
+.sp-hamburger { font-size:18px; cursor:pointer; color:#374151 }
+.sp-header-center { display:flex; flex-direction:column; align-items:center; justify-content:center }
+.sp-logo-img { max-height:40px; max-width:120px; object-fit:contain }
+.sp-logo-text { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:18px; letter-spacing:-.4px; text-align:center }
+.sp-logo-text em { font-style:normal; color:#3b82f6 }
+.sp-header-right { display:flex; align-items:center; justify-content:flex-end; gap:16px }
+.sp-header-icon { font-size:17px; cursor:pointer; color:#374151 }
+
+/* NAV — aparece só em desktop como linha abaixo do header */
+.sp-nav-bar { display:flex; align-items:center; gap:0; border-bottom:1px solid #f3f4f6; padding:0 20px; background:#fff }
+.sp-nav-bar a { font-size:13px; font-weight:600; color:#374151; padding:10px 16px; display:block; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s }
+.sp-nav-bar a:first-child { border-bottom-color:#1e40af; color:#1e40af }
+.sp-nav-bar a:hover { color:#1e40af }
+
+/* HERO — banner de imagem cheia */
+.sp-hero { position:relative; overflow:hidden; background:#1e3a8a }
+.sp-hero-media { width:100%; display:block; object-fit:cover }
+.sp-hero-overlay { position:absolute; inset:0 }
+.sp-hero-content {
+  position:absolute; bottom:0; left:0; right:0;
+  padding:20px 24px; background:linear-gradient(transparent, rgba(0,0,0,.45));
+}
+.sp-hero-content.centered {
+  inset:0; bottom:auto; top:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; background:none; padding:40px 24px;
+}
+.sp-hero-title-main { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:clamp(22px,4vw,42px); line-height:1.05; color:#fff; margin-bottom:8px }
+.sp-hero-sub-main { font-size:14px; color:rgba(255,255,255,.88); line-height:1.65; margin-bottom:20px; max-width:480px }
+.sp-hero-btn-main { display:inline-block; padding:12px 26px; border-radius:8px; font-weight:700; font-size:14px; border:none; cursor:pointer; font-family:inherit; transition:all .15s }
+.sp-hero-btn-main:hover { transform:translateY(-1px); filter:brightness(1.05) }
+
+/* PRODUCTS SECTION */
+.sp-prods-section { padding:28px 16px 32px }
+.sp-section-title { font-family:'Plus Jakarta Sans',sans-serif; font-weight:900; font-size:20px; text-align:center; letter-spacing:-.3px; color:#111; margin-bottom:16px; text-transform:uppercase }
+.sp-prods-grid { display:grid; gap:12px }
+.sp-prod-card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; cursor:pointer; transition:all .2s; position:relative }
+.sp-prod-card:hover { box-shadow:0 6px 24px rgba(0,0,0,.1); transform:translateY(-2px) }
+.sp-prod-img { aspect-ratio:1/1; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:52px; overflow:hidden; position:relative }
+.sp-prod-img img { width:100%; height:100%; object-fit:cover }
+/* badge — tag colorida tipo "SAVE 31%" no canto inferior esquerdo sobre a foto */
+.sp-prod-badge {
+  position:absolute; bottom:10px; left:10px;
+  background:#6d28d9; color:#fff;
+  font-size:10px; font-weight:800; padding:4px 10px; border-radius:20px;
+  text-transform:uppercase; letter-spacing:.04em; display:flex; align-items:center; gap:4px;
+}
+.sp-prod-badge::before { content:'🏷'; font-size:10px }
+.sp-prod-info { padding:10px 12px 14px }
+.sp-prod-name { font-weight:600; font-size:13px; color:#111827; line-height:1.35; margin-bottom:8px; min-height:36px }
+.sp-prod-prices { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap }
+.sp-prod-price-new { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:17px; color:#1e40af }
+.sp-prod-price-old { font-size:12px; color:#9ca3af; text-decoration:line-through; font-weight:500 }
+/* view-all button */
+.sp-view-all-wrap { text-align:center; margin-top:18px }
+.sp-view-all-btn { display:inline-block; padding:11px 32px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; transition:all .15s }
+
+/* COMPARE SECTION — texto à esquerda, tabela à direita numa coluna em mobile */
+.sp-compare { padding:28px 16px; background:#f0f4ff }
+.sp-compare-wrap { max-width:900px; margin:0 auto }
+.sp-compare-title { font-family:'Plus Jakarta Sans',sans-serif; font-weight:900; font-size:clamp(20px,3vw,30px); text-align:center; color:#111; text-transform:uppercase; line-height:1.15; margin-bottom:10px }
+.sp-compare-desc { font-size:13px; color:#6b7280; line-height:1.7; text-align:center; margin-bottom:24px; max-width:560px; margin-left:auto; margin-right:auto }
+/* table — coluna da nossa loja em azul escuro */
+.sp-cmp-tbl { width:100%; border-collapse:separate; border-spacing:0; border-radius:12px; overflow:hidden; background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.08) }
+.sp-cmp-tbl thead tr { background:#fff }
+.sp-cmp-tbl th { padding:10px 14px; font-size:11px; font-weight:700; text-align:center; border-bottom:1px solid #e5e7eb }
+.sp-cmp-tbl th:first-child { text-align:left; color:#6b7280 }
+.sp-cmp-tbl th.us-col { background:#1e3a8a; color:#fff; font-size:10px; text-transform:uppercase }
+.sp-cmp-tbl td { padding:11px 14px; border-top:1px solid #e5e7eb; font-size:13px; text-align:center; vertical-align:middle }
+.sp-cmp-tbl td:first-child { text-align:left; font-weight:700; font-size:12px; color:#374151; text-transform:uppercase; letter-spacing:.04em }
+.sp-cmp-tbl td.us-val { background:rgba(30,58,138,.05); font-size:16px }
+.sp-cmp-tbl td.them-val { font-size:16px; color:#e5e7eb }
+.sp-cmp-check { color:#1e3a8a; font-weight:800 }
+.sp-cmp-cross { color:#d1d5db; font-weight:700 }
+
+/* TESTIMONIALS — cards brancos com estrelas amarelas, avatar roxo */
+.sp-testimonials { padding:28px 16px 32px; background:#fff }
+.sp-test-grid { display:grid; gap:14px }
+.sp-test-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:20px 18px; position:relative; box-shadow:0 1px 6px rgba(0,0,0,.05) }
+.sp-test-quote { position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%; background:#6d28d9; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff }
+.sp-test-stars { color:#f59e0b; font-size:15px; margin-bottom:6px; letter-spacing:1px }
+.sp-test-title { font-weight:800; font-size:13px; color:#111; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px }
+.sp-test-text { font-size:13px; color:#4b5563; line-height:1.7 }
+.sp-test-author { font-style:italic; font-size:12px; color:#9ca3af; margin-top:12px; font-weight:600 }
+
+/* FOOTER */
+.sp-footer { padding:24px 20px; display:flex; flex-direction:column; gap:16px }
+.sp-footer-row { display:flex; flex-direction:column; gap:10px }
+.sp-footer-brand { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:15px }
+.sp-footer-links { display:flex; flex-wrap:wrap; gap:14px }
+.sp-footer-link { font-size:12px; opacity:.7; cursor:pointer; transition:opacity .15s }
+.sp-footer-link:hover { opacity:1 }
+.sp-footer-wa { display:inline-flex; align-items:center; gap:7px; background:#25D366; color:#fff; padding:9px 16px; border-radius:8px; font-weight:700; font-size:12px; width:fit-content }
+.sp-footer-copy { font-size:11px; opacity:.45; padding-top:12px; border-top:1px solid rgba(255,255,255,.15) }
+
+/* CARRINHO E CHECKOUT */
+.cart-fab { position:fixed; bottom:22px; right:22px; background:#1e3a8a; color:#fff; width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,.25); z-index:50; border:none; }
+.cart-badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; font-size:11px; font-weight:700; min-width:20px; height:20px; border-radius:10px; display:flex; align-items:center; justify-content:center; padding:0 5px; }
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:60; align-items:center; justify-content:center; padding:16px; }
+.modal-bg.show { display:flex; }
+.modal-box { background:#fff; border-radius:16px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; padding:22px; }
+.modal-t { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:20px; margin-bottom:16px; color:#111827; }
+.cart-item { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #f0f0f0; }
+.cart-item-em { font-size:26px; }
+.cart-item-info { flex:1; }
+.cart-item-name { font-weight:600; font-size:13.5px; color:#111827; }
+.cart-item-price { font-size:12.5px; color:#1e40af; font-weight:700; }
+.qty-ctrl { display:flex; align-items:center; gap:8px; }
+.qty-btn { width:26px; height:26px; border-radius:6px; border:1px solid #e5e7eb; background:#f9fafb; cursor:pointer; font-size:15px; font-weight:700; color:#374151; }
+.cart-total { display:flex; justify-content:space-between; align-items:center; margin:16px 0; font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:18px; color:#111827; }
+.chk-field { margin-bottom:12px; }
+.chk-label { display:block; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+.chk-input { width:100%; padding:11px 13px; border:1px solid #e5e7eb; border-radius:9px; font-size:14px; font-family:inherit; outline:none; }
+.chk-input:focus { border-color:#1e3a8a; }
+.chk-pw { position:relative; display:flex; align-items:center; }
+.chk-pfx { position:absolute; left:12px; font-size:13px; color:#6b7280; font-weight:600; pointer-events:none; }
+.chk-pw .chk-input { padding-left:48px; }
+.btn-primary { width:100%; background:#1e3a8a; color:#fff; border:none; border-radius:10px; padding:13px; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
+.btn-ghost { width:100%; background:#f3f4f6; color:#374151; border:none; border-radius:10px; padding:11px; font-weight:600; font-size:13px; cursor:pointer; margin-top:8px; font-family:inherit; }
+.btn-add { background:#1e40af; color:#fff; border:none; border-radius:7px; padding:8px 14px; font-weight:700; font-size:12px; cursor:pointer; width:100%; margin-top:8px; font-family:inherit; }
+.empty-cart { text-align:center; color:#9ca3af; padding:30px 0; font-size:13px; }
+.ok-scr { text-align:center; padding:20px 0; }
+.ok-ico { font-size:48px; }
+.ok-t { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:20px; margin:10px 0 6px; color:#111827; }
+.ok-s { font-size:13px; color:#6b7280; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div id="loadingScr"><div class="spin"></div><div style="color:#6b7280;font-size:14px;">A carregar a loja...</div></div>
+
+<div id="errorScr" style="display:none;">
+  <div style="font-size:48px;margin-bottom:12px;">🏪</div>
+  <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;color:#111827;margin-bottom:8px;">Loja não encontrada</div>
+  <p style="color:#6b7280;font-size:14px;max-width:340px;line-height:1.6;">Esta loja não existe ou ainda não foi publicada pelo vendedor.</p>
+</div>
+
+<div class="store-wrap" id="storeWrap" style="display:none;">
+  <div class="sp-root" id="storeContent"></div>
+</div>
+
+<button class="cart-fab" id="cartFab" style="display:none;" onclick="openCart()">🛒<span class="cart-badge" id="cartBadge" style="display:none;">0</span></button>
+
+<!-- MODAL CARRINHO -->
+<div class="modal-bg" id="cartModal">
+  <div class="modal-box">
+    <div class="modal-t">🛒 O teu carrinho</div>
+    <div id="cartItems"></div>
+    <div class="cart-total" id="cartTotalRow" style="display:none;"><span>Total</span><span id="cartTotal">0 MT</span></div>
+    <button class="btn-primary" id="checkoutBtn" onclick="goCheckout()" style="display:none;">Finalizar pedido →</button>
+    <button class="btn-ghost" onclick="closeModal('cartModal')">Continuar a comprar</button>
+  </div>
+</div>
+
+<!-- MODAL CHECKOUT -->
+<div class="modal-bg" id="checkoutModal">
+  <div class="modal-box">
+    <div id="checkoutForm">
+      <div class="modal-t">Finalizar pedido</div>
+      <p style="font-size:12.5px;color:#6b7280;margin-bottom:16px;line-height:1.55;">Pagamento na entrega (COD). Preenche os teus dados e a loja entrará em contacto para confirmar.</p>
+      <div class="chk-field"><label class="chk-label">Nome completo *</label><input class="chk-input" id="ck-name" placeholder="Ex: João Machava"></div>
+      <div class="chk-field"><label class="chk-label">Telefone (WhatsApp) *</label><div class="chk-pw"><span class="chk-pfx">+258</span><input class="chk-input" id="ck-tel" type="tel" placeholder="8X XXX XXXX" maxlength="9" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,9)"></div></div>
+      <div class="chk-field"><label class="chk-label">Cidade *</label><select class="chk-input" id="ck-city"><option>Maputo</option><option>Matola</option></select></div>
+      <div class="chk-field"><label class="chk-label">Endereço de entrega *</label><textarea class="chk-input" id="ck-addr" rows="2" placeholder="Bairro, rua, referência..."></textarea></div>
+      <div class="cart-total"><span>Total</span><span id="ckTotal">0 MT</span></div>
+      <button class="btn-primary" onclick="submitOrder()" id="submitBtn">Confirmar pedido →</button>
+      <button class="btn-ghost" onclick="closeModal('checkoutModal')">Voltar</button>
+    </div>
+    <div id="checkoutOk" style="display:none;">
+      <div class="ok-scr">
+        <span class="ok-ico">✅</span>
+        <div class="ok-t">Pedido enviado!</div>
+        <p class="ok-s">A loja recebeu o teu pedido e vai contactar-te pelo WhatsApp para confirmar a entrega e o pagamento.</p>
+        <button class="btn-primary" style="margin-top:18px;" onclick="closeModal('checkoutModal');location.reload();">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://slnoutmepcxqhjibxlxm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_pxnyQopNvNHnzrL38SGiFg_SXF7JPX3';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let STORE = null, STORE_ID = null, THEME = null, CART = [];
+
+function getParam(n){ return new URLSearchParams(location.search).get(n); }
+
+async function init(){
+  const slug = getParam('loja');
+  if (!slug){ showError(); return; }
+  const { data, error } = await sb.from('stores').select('*').eq('slug', slug).eq('is_published', true).maybeSingle();
+  if (error || !data){ showError(); return; }
+  STORE = data; STORE_ID = data.id;
+  THEME = (data.theme && data.theme.editor) ? data.theme.editor : null;
+  // Carregar produtos activos reais
+  const { data: prods } = await sb.from('products').select('*').eq('store_id', STORE_ID).eq('status','active').order('created_at',{ascending:false});
+  window.REAL_PRODS = (prods||[]).map(p => ({ id:p.id, nome:p.name, preco:Number(p.price), em:p.emoji||'📦', imgs:p.images||[] }));
+  renderStore();
+  document.getElementById('loadingScr').style.display='none';
+  document.getElementById('storeWrap').style.display='block';
+  document.getElementById('cartFab').style.display='flex';
+  document.title = (THEME?.header?.logoText || 'Loja') + ' • VendaJá';
+}
+function showError(){ document.getElementById('loadingScr').style.display='none'; document.getElementById('errorScr').style.display='flex'; }
+
+function renderStore(){
+  const S = THEME || defaultTheme();
+  // Se a montra estiver vazia, usa os produtos reais
+  let items = (S.products && S.products.items && S.products.items.length) ? S.products.items : [];
+  if (!items.length && window.REAL_PRODS) {
+    items = window.REAL_PRODS.slice(0,8).map(p => ({ realId:p.id, name:p.nome, price:p.preco, oldPrice:null, discount:0, em:p.em, img:(p.imgs&&p.imgs[0])||null }));
+  }
+  let html = '';
+  // TICKER
+  if (S.ticker && S.ticker.visible){
+    const t = [...S.ticker.items,...S.ticker.items].map(x=>'<span>'+esc(x)+'</span>').join('');
+    html += '<div class="sp-ticker" style="background:'+S.ticker.bg+';color:'+S.ticker.color+';"><div class="sp-ticker-inner">'+t+'</div></div>';
+  }
+  // HEADER
+  if (S.header){
+    const logo = S.header.logoImg ? '<img class="sp-logo-img" src="'+S.header.logoImg+'">' : '<div class="sp-logo-text" style="color:'+S.header.txtColor+';">'+esc(S.header.logoText)+'</div>';
+    const nav = '<div class="sp-nav-bar" style="background:'+S.header.bgColor+';">'+(S.header.menuItems||[]).map((m,i)=>'<a style="color:'+(i===0?'#1e40af':S.header.txtColor)+';">'+esc(m)+'</a>').join('')+'</div>';
+    html += '<div class="sp-header" style="background:'+S.header.bgColor+';'+(S.header.showSeparator?'border-bottom:1px solid #f3f4f6;':'')+'"><div class="sp-header-left"><span class="sp-hamburger">☰</span></div><div class="sp-header-center">'+logo+'</div><div class="sp-header-right"><span class="sp-header-icon" style="color:'+S.header.txtColor+';">🔍</span><span class="sp-header-icon" style="color:'+S.header.txtColor+';">🛒</span></div></div>'+nav;
+  }
+  // HERO
+  if (S.hero){
+    const title = esc(S.hero.title).split('\n').join('<br>');
+    if (S.hero.bgImage){
+      html += '<div class="sp-hero" style="min-height:'+S.hero.minHeight+'px;position:relative;"><img class="sp-hero-media" src="'+S.hero.bgImage+'" style="width:100%;min-height:'+S.hero.minHeight+'px;object-fit:cover;display:block;"><div class="sp-hero-overlay" style="background:rgba(0,0,0,'+(S.hero.overlayOpacity/100)+');"></div><div class="sp-hero-content"><div class="sp-hero-title-main" style="color:'+S.hero.textColor+';">'+title+'</div><div class="sp-hero-sub-main" style="color:'+S.hero.textColor+';">'+esc(S.hero.subtitle)+'</div><button class="sp-hero-btn-main" style="background:'+S.hero.btnColor+';color:'+S.hero.btnTextColor+';" onclick="scrollToProds()">'+esc(S.hero.btnText)+'</button></div></div>';
+    } else {
+      html += '<div class="sp-hero" style="min-height:'+S.hero.minHeight+'px;background:'+S.hero.bgColor+';"><div class="sp-hero-content centered"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+S.hero.textColor+';opacity:.8;margin-bottom:10px;">'+esc(S.hero.tag)+'</div><div class="sp-hero-title-main" style="color:'+S.hero.textColor+';">'+title+'</div><div class="sp-hero-sub-main" style="color:'+S.hero.textColor+';">'+esc(S.hero.subtitle)+'</div><button class="sp-hero-btn-main" style="background:'+S.hero.btnColor+';color:'+S.hero.btnTextColor+';" onclick="scrollToProds()">'+esc(S.hero.btnText)+'</button></div></div>';
+    }
+  }
+  // PRODUCTS
+  const cols = (S.products && S.products.columns) || 3;
+  const cards = items.map((p,idx)=>{
+    const img = p.img ? '<img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover;">' : '<span style="font-size:52px;">'+(p.em||'📦')+'</span>';
+    const badge = (S.products&&S.products.showBadges&&p.discount>0) ? '<div class="sp-prod-badge">SAVE '+p.discount+'%</div>' : '';
+    const old = p.oldPrice ? '<span class="sp-prod-price-old">'+p.oldPrice.toLocaleString('pt')+',00 Mt</span>' : '';
+    return '<div class="sp-prod-card"><div class="sp-prod-img">'+img+badge+'</div><div class="sp-prod-info"><div class="sp-prod-name">'+esc(p.name)+'</div><div class="sp-prod-prices"><span class="sp-prod-price-new">'+p.price.toLocaleString('pt')+',00 Mt</span>'+old+'</div><button class="btn-add" onclick="addToCart('+idx+')">Adicionar ao carrinho</button></div></div>';
+  }).join('');
+  window.SHOWCASE = items;
+  html += '<div class="sp-prods-section" id="prodsSection"><div class="sp-section-title">'+esc((S.products&&S.products.title)||'Produtos')+'</div><div class="sp-prods-grid" style="grid-template-columns:repeat('+cols+',1fr);">'+(cards||'<p style=\"grid-column:1/-1;text-align:center;color:#9ca3af;padding:30px;\">Ainda sem produtos disponíveis.</p>')+'</div></div>';
+  // FOOTER
+  if (S.footer){
+    const links = (S.footer.links||[]).map(l=>'<span class="sp-footer-link">'+esc(l)+'</span>').join('');
+    const wa = S.footer.showWhatsapp ? '<div class="sp-footer-wa">💬 '+esc(S.footer.whatsappNumber)+'</div>' : '';
+    html += '<div class="sp-footer" style="background:'+S.footer.bgColor+';color:'+S.footer.txtColor+';"><div class="sp-footer-row"><div class="sp-footer-brand">'+esc(S.footer.logoText)+'</div><div class="sp-footer-links">'+links+'</div>'+wa+'</div><div class="sp-footer-copy">'+esc(S.footer.copyright)+'</div></div>';
+  }
+  document.getElementById('storeContent').innerHTML = html;
+}
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function scrollToProds(){ document.getElementById('prodsSection')?.scrollIntoView({behavior:'smooth'}); }
+
+function addToCart(idx){
+  const p = window.SHOWCASE[idx];
+  const ex = CART.find(c => c.name===p.name && c.price===p.price);
+  if (ex) ex.qty++; else CART.push({ realId:p.realId, name:p.name, price:p.price, em:p.em, qty:1 });
+  updateCartBadge();
+  const b = document.getElementById('cartFab');
+  b.style.transform='scale(1.15)'; setTimeout(()=>b.style.transform='',150);
+}
+function updateCartBadge(){
+  const n = CART.reduce((s,c)=>s+c.qty,0);
+  const bd = document.getElementById('cartBadge');
+  bd.textContent = n; bd.style.display = n>0?'flex':'none';
+}
+function openCart(){ renderCart(); document.getElementById('cartModal').classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function renderCart(){
+  const box = document.getElementById('cartItems');
+  if (!CART.length){ box.innerHTML='<div class="empty-cart">O teu carrinho está vazio.</div>'; document.getElementById('cartTotalRow').style.display='none'; document.getElementById('checkoutBtn').style.display='none'; return; }
+  box.innerHTML = CART.map((c,i)=>'<div class="cart-item"><span class="cart-item-em">'+(c.em||'📦')+'</span><div class="cart-item-info"><div class="cart-item-name">'+esc(c.name)+'</div><div class="cart-item-price">'+c.price.toLocaleString('pt')+' MT</div></div><div class="qty-ctrl"><button class="qty-btn" onclick="chgQty('+i+',-1)">−</button><span>'+c.qty+'</span><button class="qty-btn" onclick="chgQty('+i+',1)">+</button></div></div>').join('');
+  document.getElementById('cartTotal').textContent = cartTotal().toLocaleString('pt')+' MT';
+  document.getElementById('cartTotalRow').style.display='flex';
+  document.getElementById('checkoutBtn').style.display='block';
+}
+function chgQty(i,d){ CART[i].qty+=d; if(CART[i].qty<=0)CART.splice(i,1); updateCartBadge(); renderCart(); }
+function cartTotal(){ return CART.reduce((s,c)=>s+c.price*c.qty,0); }
+function goCheckout(){ closeModal('cartModal'); document.getElementById('ckTotal').textContent=cartTotal().toLocaleString('pt')+' MT'; document.getElementById('checkoutModal').classList.add('show'); }
+
+async function submitOrder(){
+  const name = document.getElementById('ck-name').value.trim();
+  const tel = document.getElementById('ck-tel').value.replace(/\D/g,'');
+  const city = document.getElementById('ck-city').value;
+  const addr = document.getElementById('ck-addr').value.trim();
+  if (!name){ alert('Preenche o teu nome.'); return; }
+  if (!/^8[234567]\d{7}$/.test(tel)){ alert('Telefone inválido. Deve ter 9 dígitos e começar por 8.'); return; }
+  if (!addr){ alert('Preenche o endereço de entrega.'); return; }
+  const btn = document.getElementById('submitBtn'); btn.textContent='A enviar...'; btn.disabled=true;
+  // Cria um pedido por cada item do carrinho
+  const rows = CART.map(c => ({
+    store_id: STORE_ID, customer_name: name, customer_phone: '+258'+tel,
+    product_id: c.realId || null, product_name: c.name, quantity: c.qty,
+    city, customer_address: addr, amount: c.price*c.qty, status: 'pend'
+  }));
+  const { error } = await sb.from('orders').insert(rows);
+  if (error){ console.error(error); alert('Erro ao enviar pedido. Tenta novamente.'); btn.textContent='Confirmar pedido →'; btn.disabled=false; return; }
+  CART=[]; updateCartBadge();
+  document.getElementById('checkoutForm').style.display='none';
+  document.getElementById('checkoutOk').style.display='block';
+}
+
+function defaultTheme(){ return { ticker:{visible:true,bg:'#1e3a8a',color:'#fff',items:['Bem-vindo à loja!']}, header:{logoText:STORE?.name||'Loja',bgColor:'#fff',txtColor:'#111',showSeparator:true,menuItems:['Início','Produtos']}, hero:{bgColor:'#1e3a8a',overlayOpacity:40,tag:'Bem-vindo',title:'Bem-vindo à nossa loja!',subtitle:'Os melhores produtos, entregues a ti.',btnText:'Ver produtos',btnColor:'#e8ff47',btnTextColor:'#000',textColor:'#fff',minHeight:340,bgImage:null}, products:{title:'Produtos',columns:3,showBadges:true,items:[]}, footer:{bgColor:'#111',txtColor:'#f0ede6',logoText:STORE?.name||'Loja',links:['Fale connosco'],showWhatsapp:false,whatsappNumber:'',copyright:'© 2026'} }; }
+
+init();
+</script>
+</body>
+</html>
