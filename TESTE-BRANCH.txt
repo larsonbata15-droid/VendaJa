@@ -1,4 +1,0 @@
-Branch de testes do tema Brilho Shop.
-
-Este arquivo existe apenas para confirmar o deployment de preview da Cloudflare.
-Não faz nenhuma alteração no funcionamento do VendaJá.
