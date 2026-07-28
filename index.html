@@ -6828,6 +6828,36 @@ const VJ_THEMES = Object.freeze({
       footer:  { bgColor:'#1e3a8a', txtColor:'#dbeafe' },
     },
   },
+  brilhoshop: {
+    nome: 'BrilhoShop',
+    desc: 'Tema inspirado na Brilho Shop: cabeçalho comercial completo, categorias, montra e foco em conversão.',
+    planos: ['pro','premium'],
+    swatch: ['#172554','#1e3a8a','#f97316'],
+    preview: '<div style="background:#f8fafc;height:100%;overflow:hidden;">'
+      + '<div style="background:#172554;color:#fff;text-align:center;font-size:7px;font-weight:700;padding:4px;">Entregas Grátis para Maputo e Matola!</div>'
+      + '<div style="background:#1e3a8a;padding:8px 10px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;">'
+      +   '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:10px;font-weight:900;color:#fff;">BrilhoShop</div>'
+      +   '<div style="height:10px;background:#fff;border-radius:3px;"></div>'
+      +   '<div style="background:#f97316;color:#fff;font-size:7px;padding:3px 6px;border-radius:3px;font-weight:800;">Carrinho</div>'
+      + '</div>'
+      + '<div style="background:#fff;padding:5px 10px;display:flex;gap:9px;border-bottom:1px solid #e5e7eb;">'
+      +   '<span style="width:25px;height:3px;background:#f97316;border-radius:2px;"></span><span style="width:25px;height:3px;background:#cbd5e1;border-radius:2px;"></span><span style="width:25px;height:3px;background:#cbd5e1;border-radius:2px;"></span>'
+      + '</div>'
+      + '<div style="padding:8px 10px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">'
+      +   '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:5px;text-align:center;"><div style="font-size:13px;">🎧</div><div style="font-size:6px;color:#172554;font-weight:800;">Tecnologia</div></div>'
+      +   '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:5px;text-align:center;"><div style="font-size:13px;">🏠</div><div style="font-size:6px;color:#172554;font-weight:800;">Casa</div></div>'
+      +   '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:5px;text-align:center;"><div style="font-size:13px;">✨</div><div style="font-size:6px;color:#172554;font-weight:800;">Beleza</div></div>'
+      + '</div></div>',
+    preset: {
+      storeColor: '#f97316',
+      ticker:  { bg:'#172554', color:'#ffffff' },
+      header:  { bgColor:'#1e3a8a', txtColor:'#ffffff', showSeparator:false },
+      hero:    { bgColor:'#1e3a8a', textColor:'#ffffff', btnColor:'#f97316', btnTextColor:'#ffffff', overlayOpacity:48 },
+      products:{ btnColor:'#f97316', btnTextColor:'#ffffff', columns:4, showBadges:true },
+      compare: { accentColor:'#1e3a8a' },
+      footer:  { bgColor:'#172554', txtColor:'#cbd5e1' },
+    },
+  },
 });
 
 // Tema activo — guardado dentro do estado do editor
@@ -7817,8 +7847,8 @@ function psImg(u){
 // renderizadores de temas estruturais sem alterar o funcionamento existente.
 function psRenderStore(realProds){
   const themeKey = String((PS_THEME && PS_THEME.themeKey) || '').toLowerCase();
-  if (themeKey === 'prestige' || themeKey === 'brilho') {
-    return psRenderBrilhoStore(realProds);
+  if (themeKey === 'brilhoshop' || themeKey === 'brilho') {
+    return psRenderBrilhoShopStore(realProds);
   }
   return psRenderDefaultStore(realProds);
 }
@@ -7826,7 +7856,7 @@ function psRenderStore(realProds){
 // Tema estrutural Brilho / Prestige.
 // Mantém os mesmos produtos, coleções, carrinho, checkout e funções públicas
 // da VendaJá; apenas substitui a composição visual da montra.
-function psRenderBrilhoStore(realProds){
+function psRenderBrilhoShopStore(realProds){
   window.PS_REALPRODS = realProds;
   const S = PS_THEME || {};
   const H = S.header || {};
