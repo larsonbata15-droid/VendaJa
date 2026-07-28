@@ -7816,7 +7816,166 @@ function psImg(u){
 // Mantém o renderizador actual como padrão e permite adicionar, no futuro,
 // renderizadores de temas estruturais sem alterar o funcionamento existente.
 function psRenderStore(realProds){
+  const themeKey = String((PS_THEME && PS_THEME.themeKey) || '').toLowerCase();
+  if (themeKey === 'prestige' || themeKey === 'brilho') {
+    return psRenderBrilhoStore(realProds);
+  }
   return psRenderDefaultStore(realProds);
+}
+
+// Tema estrutural Brilho / Prestige.
+// Mantém os mesmos produtos, coleções, carrinho, checkout e funções públicas
+// da VendaJá; apenas substitui a composição visual da montra.
+function psRenderBrilhoStore(realProds){
+  window.PS_REALPRODS = realProds;
+  const S = PS_THEME || {};
+  const H = S.header || {};
+  const T = S.ticker || {};
+  const P = S.products || {};
+  const F = S.footer || {};
+  const Hero = S.hero || {};
+  const navy = '#172554';
+  const blue = '#1e3a8a';
+  const orange = '#f97316';
+  const pale = '#eff6ff';
+  const storeName = H.logoText || PS_STORE?.name || 'Loja';
+  const vendorTel = (F.whatsappNumber && !F.whatsappNumber.includes('000 0000'))
+    ? F.whatsappNumber
+    : (PS_STORE?.theme?.vendorTel || '');
+  window.PS_TEL = String(vendorTel || '').replace(/\D/g,'');
+
+  let items = (P.items && P.items.length) ? P.items : [];
+  if (!items.length) {
+    items = realProds.map(p => ({
+      realId:p.id,
+      name:p.nome,
+      price:p.preco,
+      oldPrice:p.compare_price || null,
+      discount:p.compare_price > p.preco
+        ? Math.round((1 - (p.preco / p.compare_price)) * 100)
+        : 0,
+      em:p.em,
+      img:(p.imgs && p.imgs[0]) || null
+    }));
+  }
+  PS_SHOWCASE = items;
+  window.PS_SHOWCASE = items;
+
+  if (!document.getElementById('psBrilhoCss')) {
+    const css = document.createElement('style');
+    css.id = 'psBrilhoCss';
+    css.textContent = `
+      .br-root{background:#f8fafc;color:#0f172a;font-family:'DM Sans',sans-serif;min-height:100vh}
+      .br-ann{background:${navy};color:#fff;font-size:12px;font-weight:700;text-align:center;padding:9px 16px}
+      .br-utility{background:#fff;border-bottom:1px solid #e5e7eb;color:#475569;font-size:12px}
+      .br-utility-in,.br-head-in,.br-nav-in,.br-main,.br-benefits-in,.br-footer-in{max-width:1240px;margin:0 auto;padding-left:22px;padding-right:22px}
+      .br-utility-in{display:flex;justify-content:space-between;align-items:center;min-height:35px;gap:16px}
+      .br-head{background:${blue};color:#fff}
+      .br-head-in{min-height:78px;display:grid;grid-template-columns:auto minmax(260px,1fr) auto;align-items:center;gap:28px}
+      .br-menu{display:none;background:none;border:0;color:#fff;padding:5px;cursor:pointer}
+      .br-logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:27px;font-weight:900;letter-spacing:-.04em;color:#fff;white-space:nowrap}
+      .br-logo img{display:block;max-width:150px;max-height:50px;object-fit:contain}
+      .br-search{display:flex;background:#fff;border-radius:7px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.12)}
+      .br-search input{border:0;outline:0;width:100%;padding:13px 15px;font:13px 'DM Sans',sans-serif;color:#334155}
+      .br-search button{border:0;background:${orange};color:#fff;width:52px;cursor:pointer;font-size:18px}
+      .br-actions{display:flex;align-items:center;gap:18px;font-size:12px;font-weight:700;white-space:nowrap}
+      .br-action{cursor:pointer;color:#fff;display:flex;align-items:center;gap:7px}
+      .br-cart{background:${orange};padding:10px 13px;border-radius:7px}
+      .br-nav{background:#fff;border-bottom:1px solid #e5e7eb;box-shadow:0 2px 9px rgba(15,23,42,.04)}
+      .br-nav-in{display:flex;align-items:center;gap:27px;min-height:48px;overflow:auto;scrollbar-width:none}
+      .br-nav a{color:#1e293b;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:none}
+      .br-nav a:first-child{color:${orange}}
+      .br-main{padding-top:24px;padding-bottom:42px}
+      .br-hero{position:relative;overflow:hidden;border-radius:12px;background:${blue};min-height:360px;display:flex;align-items:center;box-shadow:0 14px 34px rgba(30,58,138,.16)}
+      .br-hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+      .br-hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(15,23,42,.82) 0%,rgba(15,23,42,.52) 48%,rgba(15,23,42,.12) 100%)}
+      .br-hero-copy{position:relative;z-index:1;max-width:560px;padding:54px;color:#fff}
+      .br-hero-tag{display:inline-block;background:${orange};padding:6px 10px;border-radius:5px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:15px}
+      .br-hero-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:44px;line-height:1.07;font-weight:900;letter-spacing:-.04em;margin-bottom:14px}
+      .br-hero-sub{font-size:16px;line-height:1.65;color:#e2e8f0;max-width:500px;margin-bottom:24px}
+      .br-hero-btn{background:${orange};color:#fff;border:0;border-radius:7px;padding:14px 23px;font-weight:800;font-family:inherit;cursor:pointer}
+      .br-cats{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:24px 0 32px}
+      .br-cat{background:#fff;border:1px solid #e5e7eb;border-radius:9px;min-height:82px;padding:12px 8px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;box-shadow:0 4px 14px rgba(15,23,42,.04)}
+      .br-cat-icon{font-size:22px}.br-cat-name{font-size:12px;font-weight:800;color:#334155}
+      .br-section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:0 0 17px}
+      .br-section-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:25px;font-weight:900;letter-spacing:-.03em;color:#0f172a}
+      .br-view{border:0;background:none;color:${blue};font-weight:800;font-family:inherit;cursor:pointer}
+      .br-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+      .br-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:.18s;position:relative}
+      .br-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(15,23,42,.10)}
+      .br-img{aspect-ratio:1/1;background:#f1f5f9;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+      .br-img img{width:100%;height:100%;object-fit:cover}.br-em{font-size:56px}
+      .br-badge{position:absolute;top:10px;left:10px;background:${orange};color:#fff;border-radius:5px;padding:5px 8px;font-size:10px;font-weight:900}
+      .br-info{padding:14px}.br-name{font-size:13px;font-weight:700;line-height:1.42;min-height:38px;color:#1e293b}
+      .br-prices{display:flex;align-items:center;gap:8px;margin:10px 0}.br-price{font-size:17px;font-weight:900;color:${blue}}.br-old{font-size:11px;color:#94a3b8;text-decoration:line-through}
+      .br-buy{width:100%;border:0;border-radius:6px;background:${orange};color:#fff;padding:10px 12px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer}
+      .br-benefits{background:${pale};border-top:1px solid #dbeafe;border-bottom:1px solid #dbeafe}
+      .br-benefits-in{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding-top:27px;padding-bottom:27px}
+      .br-benefit{display:flex;align-items:center;gap:11px;padding:0 18px;border-right:1px solid #bfdbfe}.br-benefit:last-child{border:0}
+      .br-benefit b{display:block;font-size:12px;color:${navy}}.br-benefit span{display:block;font-size:11px;color:#64748b;margin-top:2px}.br-benefit i{font-style:normal;font-size:25px}
+      .br-footer{background:${navy};color:#cbd5e1;padding:42px 0 22px}
+      .br-footer-in{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:38px}.br-footer-logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:900;color:#fff;margin-bottom:10px}
+      .br-footer-title{color:#fff;font-weight:800;font-size:13px;margin-bottom:12px}.br-footer-link{display:block;font-size:12px;margin:8px 0;cursor:pointer}
+      .br-copy{max-width:1240px;margin:28px auto 0;padding:18px 22px 0;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:#94a3b8}
+      @media(max-width:900px){.br-head-in{grid-template-columns:auto 1fr auto}.br-search{display:none}.br-menu{display:block}.br-grid{grid-template-columns:repeat(3,1fr)}.br-cats{grid-template-columns:repeat(3,1fr)}.br-utility-in span:last-child{display:none}.br-benefits-in{grid-template-columns:1fr 1fr;row-gap:22px}.br-benefit:nth-child(2){border:0}}
+      @media(max-width:640px){.br-utility{display:none}.br-head-in{min-height:66px;padding:0 14px;gap:10px}.br-logo{font-size:21px}.br-actions .br-account{display:none}.br-cart{padding:9px 10px}.br-nav{display:none}.br-main{padding:12px 12px 28px}.br-hero{min-height:340px;border-radius:8px}.br-hero-copy{padding:28px}.br-hero-title{font-size:32px}.br-hero-sub{font-size:14px}.br-cats{grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 25px}.br-cat{min-height:72px}.br-grid{grid-template-columns:repeat(2,1fr);gap:10px}.br-info{padding:10px}.br-name{font-size:12px}.br-price{font-size:14px}.br-section-title{font-size:21px}.br-benefits-in{grid-template-columns:1fr;padding:22px 18px}.br-benefit{border:0;padding:9px 0}.br-footer-in{grid-template-columns:1fr;gap:23px;padding:0 20px}.br-copy{margin-top:22px}.br-actions{gap:8px;font-size:11px}}
+    `;
+    document.head.appendChild(css);
+  }
+
+  const logo = H.logoImg
+    ? '<img src="'+psImg(H.logoImg)+'" alt="'+psEsc(storeName)+'">'
+    : psEsc(storeName);
+  const tickerItems = (T.items && T.items.length) ? T.items : ['Entregas grátis em Maputo e Matola!'];
+  const announcement = psEsc(tickerItems.join('  •  '));
+  const menuItems = (H.menuItems && H.menuItems.length)
+    ? H.menuItems
+    : ['Home','Coleções','Produtos','Entrar em contacto'];
+  const nav = menuItems.map(m =>
+    '<a onclick="psNavGo(\''+psEsc(m).replace(/'/g,"\\'")+'\')">'+psEsc(m)+'</a>'
+  ).join('');
+  const collections = window.PS_COLLECTIONS || [];
+  const defaultCats = [
+    {id:'',name:'Mais Vendidos',icon:'🔥'},
+    {id:'',name:'Casa e Cozinha',icon:'🏠'},
+    {id:'',name:'Moda e Beleza',icon:'✨'},
+    {id:'',name:'Acessórios',icon:'⌚'},
+    {id:'',name:'Tecnologia',icon:'🎧'},
+    {id:'',name:'Todos',icon:'🛍️'}
+  ];
+  const cats = (collections.length ? collections.slice(0,6).map(c => ({
+    id:c.id,name:c.name,icon:'◈'
+  })) : defaultCats).map(c =>
+    '<div class="br-cat" onclick="'+(c.id ? "psOpenCollection('"+c.id+"')" : "document.getElementById('psProds').scrollIntoView({behavior:'smooth'})")+'"><div class="br-cat-icon">'+c.icon+'</div><div class="br-cat-name">'+psEsc(c.name)+'</div></div>'
+  ).join('');
+  const cards = items.map((p,idx) => {
+    const img = p.img
+      ? '<img src="'+psImg(p.img)+'" alt="'+psEsc(p.name)+'">'
+      : '<span class="br-em">'+(p.em || '📦')+'</span>';
+    const badge = P.showBadges !== false && p.discount > 0
+      ? '<div class="br-badge">-'+p.discount+'%</div>' : '';
+    const old = p.oldPrice
+      ? '<span class="br-old">'+Number(p.oldPrice).toLocaleString('pt')+' Mt</span>' : '';
+    return '<article class="br-card" onclick="psOpenProduct('+idx+')"><div class="br-img">'+img+badge+'</div><div class="br-info"><div class="br-name">'+psEsc(p.name)+'</div><div class="br-prices"><span class="br-price">'+Number(p.price||0).toLocaleString('pt')+' Mt</span>'+old+'</div><button class="br-buy" onclick="event.stopPropagation();psOpenProduct('+idx+')">'+psEsc(P.btnText || 'Encomendar agora')+'</button></div></article>';
+  }).join('');
+  const heroBg = Hero.bgImage
+    ? '<img class="br-hero-bg" src="'+psImg(Hero.bgImage)+'" alt="">' : '';
+  const footerLinks = (F.links || ['Fale connosco']).map(l =>
+    '<span class="br-footer-link" onclick="'+(String(l).toLowerCase().includes('fale') ? 'psContact()' : "psInfo('"+psEsc(l).replace(/'/g,"\\'")+"')")+'">'+psEsc(l)+'</span>'
+  ).join('');
+
+  const html = '<div class="br-root">'
+    + '<div class="br-ann">'+announcement+'</div>'
+    + '<div class="br-utility"><div class="br-utility-in"><span>Entregas rápidas e pagamento na entrega</span><span>'+(vendorTel ? 'Precisa de ajuda? '+psEsc(vendorTel) : 'Compra simples e segura')+'</span></div></div>'
+    + '<header class="br-head"><div class="br-head-in"><button class="br-menu" onclick="psToggleMenu()" aria-label="Menu">☰</button><div class="br-logo">'+logo+'</div><div class="br-search"><input placeholder="O que está buscando?" onkeydown="if(event.key===\'Enter\'){psOpenSearch();setTimeout(()=>{const e=document.getElementById(\'psSearchInp\');if(e){e.value=this.value;e.dispatchEvent(new Event(\'input\'));}},40)}"><button onclick="psOpenSearch()" aria-label="Pesquisar">⌕</button></div><div class="br-actions"><span class="br-action br-account" onclick="psInfo(\'Conta do cliente\')">♙ Entrar / Cadastrar</span><span class="br-action br-cart" onclick="psOpenCart()">🛒 <span id="brCartCount">'+PS_CART.length+'</span> Carrinho</span></div></div></header>'
+    + '<nav class="br-nav"><div class="br-nav-in">'+nav+'</div></nav>'
+    + '<main class="br-main"><section class="br-hero">'+heroBg+'<div class="br-hero-shade"></div><div class="br-hero-copy">'+(Hero.tag ? '<div class="br-hero-tag">'+psEsc(Hero.tag)+'</div>' : '')+'<div class="br-hero-title">'+psEsc(Hero.title || 'Produtos que fazem a diferença').split('\n').join('<br>')+'</div><div class="br-hero-sub">'+psEsc(Hero.subtitle || 'Qualidade, praticidade e entrega rápida para tornar o teu dia mais simples.')+'</div><button class="br-hero-btn" onclick="document.getElementById(\'psProds\').scrollIntoView({behavior:\'smooth\'})">'+psEsc(Hero.btnText || 'Ver produtos')+'</button></div></section>'
+    + '<section class="br-cats" id="psColls">'+cats+'</section>'
+    + '<section id="psProds"><div class="br-section-head"><div><div class="br-section-title">'+psEsc(P.title || 'Mais Vendidos')+'</div></div><button class="br-view" onclick="document.getElementById(\'psProds\').scrollIntoView({behavior:\'smooth\'})">Ver todos →</button></div><div class="br-grid">'+(cards || '<p style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b;">Ainda sem produtos disponíveis.</p>')+'</div></section></main>'
+    + '<section class="br-benefits"><div class="br-benefits-in"><div class="br-benefit"><i>🔒</i><div><b>Compra Segura</b><span>Os teus dados estão protegidos</span></div></div><div class="br-benefit"><i>🚚</i><div><b>Entrega Rápida</b><span>Maputo e Matola</span></div></div><div class="br-benefit"><i>💬</i><div><b>Suporte Profissional</b><span>Atendimento quando precisares</span></div></div><div class="br-benefit"><i>💵</i><div><b>Pagamento na Entrega</b><span>Compra com tranquilidade</span></div></div></div></section>'
+    + '<footer class="br-footer"><div class="br-footer-in"><div><div class="br-footer-logo">'+psEsc(F.logoText || storeName)+'</div><div style="font-size:12px;line-height:1.7;max-width:360px;">Produtos escolhidos para facilitar a tua rotina, com atendimento local e pagamento simples.</div></div><div><div class="br-footer-title">Links rápidos</div>'+footerLinks+'</div><div><div class="br-footer-title">Fale connosco</div>'+(vendorTel ? '<span class="br-footer-link" onclick="psContact()">WhatsApp: '+psEsc(vendorTel)+'</span>' : '')+'<span class="br-footer-link">Pagamento na entrega</span><span class="br-footer-link">Maputo, Moçambique</span></div></div><div class="br-copy">'+psEsc(F.copyright || '© 2026 '+storeName+'. Todos os direitos reservados.')+'</div></footer>'
+    + '</div>';
+  document.getElementById('psContent').innerHTML = html;
 }
 
 function psRenderDefaultStore(realProds){
@@ -8249,9 +8408,11 @@ function psUcGo(idx, i){
 
 
 function psUpdBadge(){
+  const n = PS_CART.reduce((s,c)=>s+c.qty,0);
+  const br = document.getElementById('brCartCount');
+  if (br) br.textContent = n;
   const bd = document.getElementById('psBadge');
   if (!bd) return;  // carrinho removido — sem badge
-  const n = PS_CART.reduce((s,c)=>s+c.qty,0);
   bd.textContent = n; bd.style.display = n>0?'flex':'none';
 }
 // "Comprar agora" da página de produto: encomenda SÓ este produto (ou a opção de upsell escolhida),
