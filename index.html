@@ -7812,7 +7812,14 @@ function psImg(u){
           .replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Ponto único de entrada para renderizar uma loja pública.
+// Mantém o renderizador actual como padrão e permite adicionar, no futuro,
+// renderizadores de temas estruturais sem alterar o funcionamento existente.
 function psRenderStore(realProds){
+  return psRenderDefaultStore(realProds);
+}
+
+function psRenderDefaultStore(realProds){
   window.PS_REALPRODS = realProds;
   const S = PS_THEME || {
     ticker:{visible:true,bg:'#1e3a8a',color:'#fff',items:['Bem-vindo à loja!']},
